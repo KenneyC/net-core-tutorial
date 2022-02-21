@@ -9,7 +9,7 @@ using TodoAPI.Models;
 
 namespace TodoAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/ToDo")]
     [ApiController]
     public class TodoController : ControllerBase
     {
@@ -22,14 +22,14 @@ namespace TodoAPI.Controllers
 
         // GET: api/Todo
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TodoItem>>> GetTodoItems()
+        public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems()
         {
-            return await _context.TodoItems.ToListAsync();
+            return await _context.TodoItems.Select(x => ItemToDTO(x)).ToListAsync();
         }
 
         // GET: api/Todo/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TodoItem>> GetTodoItem(long id)
+        public async Task<ActionResult<TodoItemDTO>> GetTodoItem(long id)
         {
             var todoItem = await _context.TodoItems.FindAsync(id);
 
@@ -38,21 +38,21 @@ namespace TodoAPI.Controllers
                 return NotFound();
             }
 
-            return todoItem;
+            return ItemToDTO(todoItem);
         }
 
         // PUT: api/Todo/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTodoItem(long id, TodoItem todoItem)
+        public async Task<IActionResult> PutTodoItem(long id, TodoItemDTO todoItemDTO)
         {
-            if (id != todoItem.Id)
+            if (id != todoItemDTO.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(todoItem).State = EntityState.Modified;
+            _context.Entry(todoItemDTO).State = EntityState.Modified;
 
             try
             {
@@ -77,8 +77,14 @@ namespace TodoAPI.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
-        public async Task<ActionResult<TodoItem>> PostTodoItem(TodoItem todoItem)
+        public async Task<ActionResult<TodoItemDTO>> PostTodoItem(TodoItemDTO todoItemDTO)
         {
+            var todoItem = new TodoItem
+            {
+                Id = todoItemDTO.Id,
+                Name = todoItemDTO.Name,
+                IsComlete = todoItemDTO.IsComlete,
+            };
             _context.TodoItems.Add(todoItem);
             await _context.SaveChangesAsync();
 
@@ -87,7 +93,7 @@ namespace TodoAPI.Controllers
 
         // DELETE: api/Todo/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<TodoItem>> DeleteTodoItem(long id)
+        public async Task<ActionResult<TodoItemDTO>> DeleteTodoItem(long id)
         {
             var todoItem = await _context.TodoItems.FindAsync(id);
             if (todoItem == null)
@@ -98,12 +104,22 @@ namespace TodoAPI.Controllers
             _context.TodoItems.Remove(todoItem);
             await _context.SaveChangesAsync();
 
-            return todoItem;
+            return ItemToDTO(todoItem);
         }
 
         private bool TodoItemExists(long id)
         {
             return _context.TodoItems.Any(e => e.Id == id);
+        }
+
+        private TodoItemDTO ItemToDTO(TodoItem todoItem)
+        {
+            return new TodoItemDTO
+            {
+                Id = todoItem.Id,
+                IsComlete = todoItem.IsComlete,
+                Name = todoItem.Name
+            };
         }
     }
 }
